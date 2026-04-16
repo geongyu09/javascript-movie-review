@@ -141,7 +141,6 @@ async function getSearchMovies(arg) {
 async function getMovieDetails(arg) {
   const { movieId, onSuccess, onError, onLoading } = arg;
   return fetcher({
-    //TODO: API 명세 보고 타입 정의하기
     fn: async () => {
       const url = new URL(`${API_PATH.MOVIE_DETAIL}/${movieId}`);
       url.searchParams.set("language", "ko-KR");
@@ -163,22 +162,36 @@ async function getMovieDetails(arg) {
     onLoading
   });
 }
+const deepCopy = (obj) => {
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    const copy2 = [];
+    for (const item of obj) {
+      copy2.push(deepCopy(item));
+    }
+    return copy2;
+  }
+  const copy = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      copy[key] = deepCopy(obj[key]);
+    }
+  }
+  return copy;
+};
 const createStore = (initialState) => {
   if (typeof initialState === "function" || typeof initialState === "symbol")
     throw new Error("초기값은 함수가 아닌 객체 혹은 원시값이어야 합니다.");
-  let state;
-  if (typeof initialState === "object") {
-    state = { ...initialState };
-  } else {
-    state = initialState;
-  }
-  const getter = () => state;
+  let state = deepCopy(initialState);
+  const getter = () => deepCopy(state);
   const modify = (update) => {
     if (typeof update === "function") {
-      state = update(state);
+      state = deepCopy(update(state));
       return;
     }
-    state = update;
+    state = deepCopy(update);
   };
   return [getter, modify];
 };
@@ -202,7 +215,12 @@ const MovieState = {
 };
 const getItemFromLocalStorage = (key) => {
   const item = localStorage.getItem(key);
-  return item ? JSON.parse(item) : null;
+  if (!item) return null;
+  try {
+    return JSON.parse(item);
+  } catch {
+    return null;
+  }
 };
 const setItemInLocalStorage = (key, value) => {
   localStorage.setItem(key, JSON.stringify(value));
@@ -223,6 +241,9 @@ function getElementBySelector(selector) {
   if (element instanceof HTMLElement) return element;
   return null;
 }
+function getElementsBySelector(selector) {
+  return document.querySelectorAll(selector);
+}
 const getMovieListElement = () => getElementBySelector(".thumbnail-list");
 const getBannerElement = () => getElementBySelector(".banner-container");
 const getSearchFormElement = () => getElementBySelector(".search-form");
@@ -236,6 +257,7 @@ const getSearchInputElement = () => getElementBySelector(".search-form input");
 const getBodyElement = () => getElementBySelector("body");
 const getModalBackgroundElement = () => getElementBySelector(".modal-background");
 const getModalSkeletonElement = () => getElementBySelector(".modal-background.skeleton");
+const getMyRatingElements = () => getElementsBySelector(".my-rating__content img");
 function addEventListenerToElement({
   element,
   event,
@@ -284,7 +306,7 @@ const setupModalCloseInteraction = (onClose) => {
   });
 };
 const setupMyRatingInteraction = (onRatingSelect) => {
-  const myRatings = document.querySelectorAll(".my-rating__content img");
+  const myRatings = getMyRatingElements();
   if (!myRatings) return;
   myRatings.forEach((myRating) => {
     addEventListenerToElement({
@@ -299,10 +321,8 @@ const setupMyRatingInteraction = (onRatingSelect) => {
     });
   });
 };
-const planetAndStarImg = "/javascript-movie-review/assets/planet_and_star-CJk4xH6r.png";
-const screamingPlanetImg = "/javascript-movie-review/assets/screaming_planet-BZvmNwfY.svg";
 const starEmptyImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAxCAYAAACcXioiAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAQ4SURBVHgB7VlNctMwFP7UwrRl0/YGzgloNwyURd0TQE5AeoK2J2hyAuAEaU9QOEHMgvCzSW9QcwLChqbDNOI9RVEk106sWGZY5JvR+FlRJD29fxlYYYX/F/I79uQXxKgRAjWANh3Ro0ct0l0ptSPxQj2DYg31oIvZ5qHpLmpAcAno07+ZdWBIq+zoN5ZCgoCoQwLnhhK4oBUS8y7xGoFRhwT49CP9eqSfPb3aEBtoiH16BkJQCdDmW7AMl9VFq0w6GUCqdKvGBENoFXpj0R2LvjSUwCsERDAGtPHGVldiqBHeWf0xxwcEQkgJOMZr+3xxpHQ+Mb//CWfMIRmIDSUtlZlhplLrOJED41orIQgDecabHaP6pPY+E2OOEQChJFBkvC4E3lv0CQIgNw4o8Y6UiCNicQdjanxqQrVtQ0s9xk0bGkU5j+zR+E38tFa/1pF6aD1/GXrqfteJfkySzYkfImfjV8CS4mXjfY7jeUNkn+YXSxvxBR3Amc3II+fnEd4CS+tmQlH2bOGoO2JwC8umFS3aI8MckiuBPol3lnilqs3EyfjxQORjak/yxTsPStq/tYraKikMvY2pak769/SOhyTl3ek8j+aswb68g5qgGb4uM1Z+oxgzzg9+rheyvQTQll9xFcpfLwNeW9nMGG2r+4M9xmWAQ760BrCejjDQacI/hVqT1nYMXtDeMnYmCv7chp0asC2soymelRN5VcjPpC5ryhtGpnOMjnjpSEIhN5CR7reJNZvTCPckiT5OUTNIbU9oVwPYm5fkOnM2z5hb0OSeBNlGXcatjbVtdaX03qTNF0p+YUWWc8Mw1cXjUJWVchS3VPS7+s5RurnoJqNUSalSgI3MAnw6m9ivyoSO/lmVuaRgd1pm7lLJHOfz4gBNuIlaFKQ8HKlDicw7G+sBWmUPxisbVcYtrVixhqeojtiiO0XGWgT/dFqoED+BpNSiOlJrPu+g6c+AdEJ6gupIDLVEwe91L5S9dSOVqnyvpB3EjUkiN7Hr4xj8JBD+9CcFv7D8/MgvzfZjwBXxp0XDPa7XZ3NJvysXXxuILTopGsSbppRgwOkHvfb4unFBQpgYytMOSuuwo/+ZosKM4aB0R+mALMiZJGW7lLLnRddMMdUo+y3BRwKxtZEHuYlSFY6o9ualrtymEOq3nr6GcSGcOWOUhA8Dh5ht7KMhSTLUOFdy8yVWC4F91eBcdPGYLv2n66iVNSf95xAlsZwE9Gmp1FcqPY+tjQxpVk7C1Ccl3VqYFOKpNR/39UyKbktAlpeAjw1I65Xv/c+RFTWnGVuUbhf4cX3ibbgXYYxUzSlVBeZlBz4M9FCsmym147Kfj9Tt9P2DOiOLUgz4qFCnsJ/Tao9vX1ya0vjGnDnTsl7IL5XoU5Sc3GlGyhNR2Vn106lSK6lu66YBLEVNn2RrBZevqoRdYYUVvPAXJrOCc9SFL6sAAAAASUVORK5CYII=";
-const Component = {
+const MovieCardComponent = {
   movie(movieData) {
     const { posterPath, title, voteAverage } = movieData;
     return `
@@ -337,7 +357,9 @@ const Component = {
       </div>
     </li>
   `;
-  },
+  }
+};
+const MovieBannerComponent = {
   movieBanner({
     title,
     posterPath,
@@ -356,7 +378,11 @@ const Component = {
           </div>
       </div>
     `;
-  },
+  }
+};
+const planetAndStarImg = "/javascript-movie-review/assets/planet_and_star-CJk4xH6r.png";
+const screamingPlanetImg = "/javascript-movie-review/assets/screaming_planet-BZvmNwfY.svg";
+const NoticeComponent = {
   emptyResult() {
     return `
       <div class="notice-box empty-result">
@@ -377,7 +403,9 @@ const Component = {
     return `
     <div class="load-more-inView"></div>
     `;
-  },
+  }
+};
+const ModalComponent = {
   movieModalSkeleton() {
     return `
     <div class="modal-background active skeleton">
@@ -441,7 +469,7 @@ const Component = {
             <h2>${title}</h2>
             <section>
               <p class="category">
-                ${releaseYear} · ${genres.join(", ")} 
+                ${releaseYear} · ${genres.join(", ")}
               </p>
               <p class="rate">
                 <img src="src/images/star_filled.png" class="star" />
@@ -495,24 +523,16 @@ const filterHTML = (parent, className) => {
   }).map((child) => child.outerHTML).join("");
 };
 const Renderer = {
-  // TODO: 같은 계층을 사용하고, 바로 하위가 아닌 더 하위의 계층을 사용하는 부분 수정 필요
-  renderSectionHeading() {
-    const heading = getSectionHeadingElement();
-    if (heading) {
-      heading.textContent = `지금 인기 있는 영화`;
-      heading.classList.remove("search-mode");
-    }
+  renderSectionHeading(element) {
+    element.textContent = `지금 인기 있는 영화`;
+    element.classList.remove("search-mode");
   },
-  // TODO: 같은 계층을 사용하고, 바로 하위가 아닌 더 하위의 계층을 사용하는 부분 수정 필요
-  renderSearchSectionHeading(title) {
-    const heading = getSectionHeadingElement();
-    if (heading) {
-      heading.textContent = `"${title}"검색 결과`;
-      heading.classList.add("search-mode");
-    }
+  renderSearchSectionHeading(element, title) {
+    element.textContent = `"${title}"검색 결과`;
+    element.classList.add("search-mode");
   },
   renderBanner(parent, { title, voteAverage, posterPath }) {
-    parent.innerHTML = Component.movieBanner({
+    parent.innerHTML = MovieBannerComponent.movieBanner({
       title,
       voteAverage,
       posterPath
@@ -521,20 +541,20 @@ const Renderer = {
   renderEmptyResult() {
     const section = getSectionElement();
     const node = document.createElement("div");
-    node.innerHTML = Component.emptyResult();
+    node.innerHTML = NoticeComponent.emptyResult();
     section?.appendChild(node);
   },
   renderError(parent, message) {
-    parent.innerHTML = Component.error(message);
+    parent.innerHTML = NoticeComponent.error(message);
   },
   renderSkeleton(parent, length) {
     appendHTML(
       parent,
-      Array.from({ length }).map(() => Component.movieSkeleton()).join("")
+      Array.from({ length }).map(() => MovieCardComponent.movieSkeleton()).join("")
     );
   },
   renderMovies(parent, movies) {
-    const movieListComponent = movies.map((movie) => Component.movie(movie)).join("");
+    const movieListComponent = movies.map((movie) => MovieCardComponent.movie(movie)).join("");
     appendHTML(parent, movieListComponent);
   },
   clearSkeleton(parent) {
@@ -542,16 +562,22 @@ const Renderer = {
     filterHTML(parent, targetClassName);
   },
   renderInView(parent) {
-    appendHTML(parent, Component.inView());
+    appendHTML(parent, NoticeComponent.inView());
   },
   renderMovieModalSkeleton(parent) {
-    appendHTML(parent, Component.movieModalSkeleton());
+    appendHTML(parent, ModalComponent.movieModalSkeleton());
   },
   renderMovieModal(parent, movie, rating) {
-    appendHTML(parent, Component.movieModal(movie, rating || 0));
+    appendHTML(parent, ModalComponent.movieModal(movie, rating || 0));
   },
   renderMovieModalError(parent) {
-    appendHTML(parent, Component.movieModalError());
+    appendHTML(parent, ModalComponent.movieModalError());
+  },
+  clearElement(parent) {
+    clearHTML(parent);
+  },
+  removeElement(element) {
+    removeElement(element);
   }
 };
 const paintError = () => {
@@ -565,7 +591,7 @@ const paintInitialLoading = (skeletonCount) => {
 };
 const paintClearBanner = () => {
   const banner = getBannerElement();
-  if (banner) clearHTML(banner);
+  if (banner) Renderer.clearElement(banner);
 };
 const paintMovieBanner = (movie) => {
   const banner = getBannerElement();
@@ -579,10 +605,12 @@ const paintMovieList = (movies) => {
   }
 };
 const paintHomeSectionHeading = () => {
-  Renderer.renderSectionHeading();
+  const heading = getSectionHeadingElement();
+  if (heading) Renderer.renderSectionHeading(heading);
 };
 const paintSearchSectionHeading = (query) => {
-  Renderer.renderSearchSectionHeading(query);
+  const heading = getSectionHeadingElement();
+  if (heading) Renderer.renderSearchSectionHeading(heading, query);
 };
 const paintEmptyResult = () => {
   Renderer.renderEmptyResult();
@@ -591,9 +619,9 @@ const paintResetList = () => {
   const banner = getBannerElement();
   const movieList = getMovieListElement();
   const emptyResult = getEmptyResultElement();
-  if (banner) clearHTML(banner);
-  if (movieList) clearHTML(movieList);
-  if (emptyResult) removeElement(emptyResult);
+  if (banner) Renderer.clearElement(banner);
+  if (movieList) Renderer.clearElement(movieList);
+  if (emptyResult) Renderer.removeElement(emptyResult);
 };
 const paintPrepareSearch = (query, skeletonCount) => {
   paintInitialLoading(skeletonCount);
@@ -609,7 +637,7 @@ const paintMovieModalSkeleton = () => {
 };
 const paintRemoveModalSkeleton = () => {
   const skeleton = getModalSkeletonElement();
-  if (skeleton) removeElement(skeleton);
+  if (skeleton) Renderer.removeElement(skeleton);
 };
 const paintMovieModal = (movie, rating) => {
   const body = getBodyElement();
@@ -621,7 +649,7 @@ const paintMovieModalError = () => {
 };
 const paintRemoveModal = () => {
   const modal = getModalBackgroundElement();
-  if (modal) removeElement(modal);
+  if (modal) Renderer.removeElement(modal);
 };
 const reserveIntersectionHandler = (elem, callback) => {
   const observer = new IntersectionObserver(
