@@ -405,13 +405,15 @@ const NoticeComponent = {
     `;
   }
 };
+const modalButtonCloseImg = "data:image/svg+xml,%3csvg%20width='20'%20height='20'%20viewBox='0%200%2020%2020'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M2.25%202.25L17.605%2017.605'%20stroke='%2395A1B2'%20stroke-width='4.5'%20stroke-linecap='round'/%3e%3cpath%20d='M2.25%2017.605L17.605%202.24997'%20stroke='%2395A1B2'%20stroke-width='4.5'%20stroke-linecap='round'/%3e%3c/svg%3e";
+const starFilledImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAxCAYAAACcXioiAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAKXSURBVHgB7ZhBbtQwFIZ/zyAxu8IN0hNANqh0Q+YG9ASlJyhzgpmeADgBvQG9QbOCJXMDwgnIqoyEqPnjcWmVxElsPU9bKZ/kZuQ4rp/f+/OeA4yMjDxqFCKhvyHh7B+gUWKGhUp5jcATxGPJxb81v67wk39XiMAE8cj+/5riVH/HM0QgigEMn3e8JLcdXPzvOwYJEssDx40ehVNEQFzERrzAj9abU6TqFdYQJIYHls47f6yoBYlhQOa8E0HMogY0xNsYIC9maQ8c944QFrOYiDvFW2eG51KZWdIDy8Ejr/AeQnh7wIhwwzZl+8s2YbvGC/iXCmd8ds1nS85Vcq6qZip9PdNqAMOh2s3ENMUFattUnHKguQAaoYwhBbarLNm3Vq9pdI2GAfZN8hkPEc2q9hAf73ZNWgbtZpdDUM3wahhgLTzDQ0PjE0PovN7tFDFDaQWfN0tMWkLnhs63EI3IsNVDgvtgK+Yj7nzuGtL7GrUJ6hK7N6Jgm3PxRdeg3kRmJ5iz5dgdOXNC2rf4Cq9EthNdVGI9HJ6p/TNxTCM6xOoiqJjTX3kwUfgCWeZdYnURXI3SE1XlmUCGgovfRwBhHrhktp7hFyQJLLHDyukZXkKaTdicYQZo+cN56JyhB5o3kCdoTv/XaIz4vyFAB/4eeBrnE6Eh4ItFSAhlA8cVbCe2FQOfyeBJiAH9scpywNYy56aG3yA1fRJz1/CrhfriX/GQXpUDjow6qLL11IGfB1zxr82he6EOzK7nrser6tJmXPeJz1MHfgao1mSTsz/1KcJoxIqXfT530XI7gwd+BlzzH2rr3u31hIuZD6nb6xhvHOAIdZFPsAcPQsrpBNUuzXAh9XnQzrnipuxxRYuQDRkZGRm5H/4BIkyx5W7xkPAAAAAASUVORK5CYII=";
 const ModalComponent = {
   movieModalSkeleton() {
     return `
     <div class="modal-background active skeleton">
       <div class="modal">
         <button class="close-modal" id="closeModal">
-          <img src="src/images/modal_button_close.svg" />
+          <img src="${modalButtonCloseImg}" />
         </button>
         <div class="modal-container">
           <div class="modal-image">
@@ -438,7 +440,7 @@ const ModalComponent = {
     <div class="modal-background active">
       <div class="modal">
         <button class="close-modal" id="closeModal">
-          <img src="src/images/modal_button_close.svg" />
+          <img src="${modalButtonCloseImg}" />
         </button>
         <div class="modal-container" style="justify-content:center;align-items:center;">
           <div class="notice-box">
@@ -456,7 +458,7 @@ const ModalComponent = {
     <div class="modal-background active">
     <div class="modal">
         <button class="close-modal" id="closeModal">
-          <img src="src/images/modal_button_close.svg" />
+          <img src="${modalButtonCloseImg}" />
         </button>
         <div class="modal-container">
           <div class="modal-image">
@@ -472,7 +474,7 @@ const ModalComponent = {
                 ${releaseYear} · ${genres.join(", ")}
               </p>
               <p class="rate">
-                <img src="src/images/star_filled.png" class="star" />
+                <img src="${starFilledImg}" class="star" />
                 <span>${voteAverage.toFixed(1)}</span>
               </p>
             </section>
@@ -483,8 +485,8 @@ const ModalComponent = {
           <div>
           ${Array.from({ length: 5 }).map((_, index) => {
       const ratingValue = (index + 1) * 2;
-      const starType = ratingValue <= rating ? "star_filled.png" : "star_empty.png";
-      return `<img src="src/images/${starType}" class="star" data-rating-value="${ratingValue}" />`;
+      const starImg = ratingValue <= rating ? starFilledImg : starEmptyImg;
+      return `<img src="${starImg}" class="star" data-rating-value="${ratingValue}" />`;
     }).join("")}
           </div>
           <span>명작이에요</span>
